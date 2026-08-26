@@ -1,0 +1,83 @@
+{
+  "_comment": [
+    "원본 template/견적서.xls 의 BIFF8 분석 결과로 확정한 셀 매핑입니다. 추측값 없음.",
+    "xf 값은 원본 파일에 이미 존재하는 XF 인덱스입니다 (새 서식을 만들지 않습니다).",
+    "  xf113 Times New Roman 9pt 우측정렬  / xf109 TNR 9pt 좌측정렬 / xf111 TNR 9pt 가운데",
+    "  xf98  바탕 10pt 가운데 / xf116 바탕 10pt 가운데",
+    "  xf118 TNR 10pt 우측정렬 + 숫자서식 182 \"₩\"#,##0;[Red]\"₩\"#,##0",
+    "  xf135 날짜서식 179 yyyy\"년\" m\"월\" d\"일\"  / xf99 통화서식 176",
+    "원본 양식에 '주소' 전용 칸이 없습니다. 주소는 특이사항(C21)에 직접 적습니다."
+  ],
+
+  "template": "template/견적서.xls",
+
+  "header": {
+    "quoteDate":  { "cell": "C12", "type": "date",   "label": "발행일자",       "note": "병합 C12:D12, 날짜서식 xf135" },
+    "quoteNo":    { "cell": "C13", "type": "text",   "label": "발행번호" },
+    "customer":   { "cell": "C14", "type": "text",   "label": "공급처(거래처명)" },
+    "contact":    { "cell": "D14", "type": "text",   "label": "담당자",         "note": "원본에 전용 라벨 없음. 공급처 우측 빈 칸(xf87)" },
+    "subject":    { "cell": "C15", "type": "text",   "label": "품명(건명)" },
+    "validity":   { "cell": "C17", "type": "text",   "label": "유효기간" },
+    "delivery":   { "cell": "C18", "type": "text",   "label": "납기" },
+    "payment":    { "cell": "C19", "type": "text",   "label": "결재조건" },
+    "bank":       { "cell": "C20", "type": "text",   "label": "은행계좌", "keepIfEmpty": true,
+                    "note": "입력이 없으면 템플릿 원본의 계좌 문구를 그대로 둔다. 계좌번호를 이 파일에 적지 않기 위한 설정." },
+    "remark":     { "cell": "C21", "type": "text",   "label": "특이사항" }
+  },
+
+  "headerAmount": { "cell": "C16", "label": "금액", "mode": "formula_ref_total",
+                    "note": "원본 xf99(통화서식). =합계셀 수식으로 채움" },
+
+  "address": { "mode": "none", "prefix": "주소: ", "sep": "  /  ",
+               "note": "원본 양식에 주소 전용 칸이 없어 UI 에서 별도 주소 입력란을 없앴다. 주소가 필요하면 특이사항(C21)에 직접 적으면 된다. mode 를 'remark' 로 바꾸면 별도 address 값을 특이사항 앞에 자동 병기한다." },
+
+  "items": {
+    "firstRow": 23,
+    "lastRow": 58,
+    "clearColumns": ["A", "B", "C", "D", "E", "F", "G", "H"],
+    "normalizeRowHeight": 195,
+    "unmergeItemRows": true,
+    "unhideItemRows": true,
+    "columns": {
+      "no":     { "col": "B", "type": "text",    "xf": 113, "label": "번호" },
+      "name":   { "col": "C", "type": "text",    "xf": 109, "label": "품명" },
+      "spec":   { "col": "D", "type": "text",    "xf": 111, "label": "규격" },
+      "unit":   { "col": "E", "type": "text",    "xf": 98,  "label": "단위" },
+      "qty":    { "col": "F", "type": "number",  "xf": 116, "label": "수량" },
+      "price":  { "col": "G", "type": "number",  "xf": 118, "label": "단가" },
+      "amount": { "col": "H", "type": "formula", "xf": 118, "label": "금액", "formula": "qty*price" }
+    }
+  },
+
+  "stamp": {
+    "enabled": true,
+    "pictureIndex": 1,
+    "label": "법인 직인",
+    "note": [
+      "원본 앵커는 C3(+555/1024) 로, B4 의 '대표이사 ○○○' 문구 중간을 덮고 있었다.",
+      "열 너비와 글꼴(HY신명조 12pt)로 계산하면 이 문구는 4.33~27.24 문자 위치를 차지하고,",
+      "마지막 글자는 25.06~27.24 문자 구간 = D열 시작(24.77) 기준 dx 19/1024 지점에서 시작한다.",
+      "따라서 좌상단을 D열 dx=19 에 두면 직인이 대표자 이름 마지막 글자 위에 겹친다.",
+      "미세조정: dx 는 해당 열 안에서 0~1023 (작을수록 왼쪽). 더 왼쪽으로 겹치려면 col=2(C열), dx=950 등.",
+      "이름 뒤에 겹치지 않게 두려면 col=3, dx=162 (이름이 끝나는 지점).",
+      "pictureIndex 0 = 우측 상단 회사 로고, 1 = 법인 직인."
+    ],
+    "topLeft": { "col": 3, "dx": 19, "row": 2, "dy": 146 }
+  },
+
+  "totals": {
+    "supply": { "cell": "H60", "label": "공 급 가", "mode": "sum",
+                "note": "원본 수식 =H27+H43 은 구(舊) 그룹소계 2개만 더하는 형태라 품목 전체 합계로 대체" },
+    "vat":    { "cell": "H61", "label": "부 가 세", "mode": "keep",
+                "note": "원본 수식 =H60*0.1 을 레코드 그대로 유지, 캐시값만 갱신" },
+    "total":  { "cell": "H62", "label": "합     계", "mode": "keep",
+                "note": "원본 수식 =H60+H61 을 레코드 그대로 유지, 캐시값만 갱신" }
+  },
+
+  "defaults": {
+    "validity": "발행일로 부터 4주",
+    "delivery": "발주로 부터 2개월",
+    "payment":  "납입 후 결제 조건",
+    "vatRate":  0.1
+  }
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>견적서 작성 — ㈜디에스에스</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark">DSS</span>
+    <div>
+      <h1>견적서 작성</h1>
+      <p>원본 <code>견적서.xls</code> 양식 · 로고 · 직인 · 서식을 그대로 유지한 채 데이터만 채웁니다.</p>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="btn-sample" class="btn ghost" type="button">예시 채우기</button>
+    <button id="btn-reset"  class="btn ghost" type="button">초기화</button>
+    <button id="btn-download" class="btn primary" type="button">
+      <span class="dl-label">Excel 다운로드 (.xls)</span>
+    </button>
+  </div>
+</header>
+
+<div id="banner" class="banner" hidden></div>
+
+<main>
+  <section class="card">
+    <h2>견적 기본 정보</h2>
+    <div class="grid">
+      <label>발행일자 <em id="c-quoteDate"></em>
+        <input type="date" id="quoteDate">
+      </label>
+      <label>발행번호 <em id="c-quoteNo"></em>
+        <input type="text" id="quoteNo" placeholder="DSS-2026-0823-01">
+      </label>
+      <label class="span2">공급처 (거래처명) <em id="c-customer"></em>
+        <input type="text" id="customer" placeholder="㈜○○○ ○○사업장">
+      </label>
+      <label>담당자 <em id="c-contact"></em>
+        <input type="text" id="contact" placeholder="홍길동 과장">
+      </label>
+      <label class="span3">품명 (건명) <em id="c-subject"></em>
+        <input type="text" id="subject" placeholder="RF Generator 부속 케이블 SET (60kW)">
+      </label>
+      <label>유효기간 <em id="c-validity"></em>
+        <input type="text" id="validity">
+      </label>
+      <label>납기 <em id="c-delivery"></em>
+        <input type="text" id="delivery">
+      </label>
+      <label class="span2">결재조건 <em id="c-payment"></em>
+        <input type="text" id="payment">
+      </label>
+      <label class="span4">특이사항 <em id="c-remark"></em>
+        <input type="text" id="remark" placeholder="설치 및 시운전 비용 별도 / 납품 장소 등 자유 기재">
+      </label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>품목</h2>
+      <div class="head-actions">
+        <span class="counter"><b id="item-count">0</b> / <span id="item-max">-</span> 행</span>
+        <button id="btn-add" class="btn small" type="button">+ 품목 추가</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="items">
+        <thead>
+          <tr>
+            <th class="c-no">번호<i>B열</i></th>
+            <th class="c-name">품명<i>C열</i></th>
+            <th class="c-spec">규격<i>D열</i></th>
+            <th class="c-unit">단위<i>E열</i></th>
+            <th class="c-qty">수량<i>F열</i></th>
+            <th class="c-price">단가<i>G열</i></th>
+            <th class="c-amt">금액<i>H열 =F*G</i></th>
+            <th class="c-act"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="empty" id="empty-msg">품목이 없습니다. <b>+ 품목 추가</b> 를 눌러 시작하세요.</p>
+  </section>
+
+  <section class="card totals">
+    <h2>합계</h2>
+    <div class="tot-grid">
+      <div class="tot">
+        <span>공 급 가 <i>H60</i></span>
+        <strong id="t-supply">₩0</strong>
+      </div>
+      <div class="tot">
+        <span>부 가 세 <i>H61</i>
+          <input type="number" id="vatRate" step="0.01" min="0" max="1" value="0.1" title="부가세율">
+        </span>
+        <strong id="t-vat">₩0</strong>
+      </div>
+      <div class="tot grand">
+        <span>총 견적금액 <i>H62</i></span>
+        <strong id="t-total">₩0</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="card note">
+    <h2>생성 규칙</h2>
+    <ul id="rules">
+      <li>원본 <code>template/견적서.xls</code> 를 매번 새로 읽어 <b>OLE2 컨테이너와 BIFF 레코드를 그대로 유지</b>한 채 셀 값만 교체합니다.</li>
+      <li>로고·직인(JPEG 2개), XF/글꼴/숫자서식, 병합 셀, 열 너비, 인쇄 설정 레코드는 <b>바이트 단위로 원본과 동일</b>합니다.</li>
+      <li><code>H61</code>(부가세), <code>H62</code>(합계) 수식은 원본 레코드를 그대로 두고 결과 캐시값만 갱신합니다.</li>
+      <li><code>H60</code>(공급가액)만 <code>=SUM(H23:H58)</code> 로 교체합니다. 원본 수식 <code>=H27+H43</code> 은 구(舊) 그룹소계 2칸만 더하는 형태라 품목 전체 합계가 되지 않습니다.</li>
+    </ul>
+  </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# 텍스트 파일은 체크아웃 시 OS 관례를 따르게 두되,
+# 엑셀/이미지 등 바이너리는 어떤 변환도 하지 않는다.
+# 이 프로젝트는 원본 .xls 와의 바이트 단위 동일성이 핵심이므로 필수 설정이다.
+* text=auto
+
+*.xls  binary
+*.xlsx binary
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+
+# 배치 파일은 CRLF 여야 한다
+*.bat text eol=crlf
