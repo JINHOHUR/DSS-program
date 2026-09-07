@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('임시 로그인')}"></head>
+<body class="login-body">
+  <form method="post" action="/dev-login" class="login-box panel">
+    <h1>DSS 수출입 관리</h1>
+    <p class="muted">포털 연동 전 <b>개발용 임시 로그인</b>입니다. 운영에서는 통합 로그인 포털이 사용자를 넘겨줍니다.</p>
+    <input type="hidden" name="next" th:value="${next}">
+    <div class="fields">
+      <div class="row"><label>로그인ID</label><input name="user" class="inp" required autofocus placeholder="포털 계정과 같은 ID"></div>
+      <div class="row"><label>이름</label><input name="name" class="inp" placeholder="표시용"></div>
+      <div class="row"><label>역할</label><select name="role" class="inp">
+        <option>영업관리</option><option>수리팀</option><option>회계팀</option><option>관리자</option><option>대표</option><option value="조회">조회만</option></select></div>
+    </div>
+    <div class="nav-row"><span class="spacer"></span><button class="btn primary">들어가기</button></div>
+  </form>
+</body>
+</html>

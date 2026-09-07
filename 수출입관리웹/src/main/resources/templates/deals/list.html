@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('안건 관리')}"></head>
+<body>
+<div class="app">
+  <aside th:replace="~{layout :: sidebar}"></aside>
+  <div class="main">
+    <header th:replace="~{layout :: topbar('안건 관리')}"></header>
+    <main class="content">
+      <div th:replace="~{layout :: flash}"></div>
+
+      <form class="toolbar" method="get" action="/deals" id="filterForm">
+        <a class="btn primary" href="/deals/new">＋ 신규</a>
+        <button type="button" class="btn" id="btnMail">Offer Sheet 메일</button>
+        <a class="btn" href="/deals/export.xlsx">엑셀 내보내기</a>
+        <span class="spacer"></span>
+        <input type="hidden" name="view" th:value="${view}">
+        <label>검색 <input type="text" name="q" th:value="${q}" placeholder="번호·고객사·모델·P.O…" class="inp w180"></label>
+        <label>고객사
+          <select name="customer" class="inp">
+            <option value="">전체</option>
+            <option th:each="c : ${customers}" th:value="${c.code}" th:text="${c.name}" th:selected="${c.code==customer}"></option>
+          </select>
+        </label>
+        <label>상태
+          <select name="status" class="inp">
+            <option value="전체" th:selected="${status=='전체'}">전체</option>
+            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}" th:selected="${s==status}"></option>
+          </select>
+        </label>
+        <button class="btn" type="submit">조회</button>
+      </form>
+
+      <div class="viewbar">
+        <span class="muted">보기</span>
+        <a th:each="v : ${views}" th:href="@{/deals(view=${v.key()},q=${q},customer=${customer},status=${status})}"
+           class="vtab" th:classappend="${v.key()==view}?'on'" th:text="${v.label()}"></a>
+        <span class="spacer"></span>
+        <strong th:text="${result.summary()}"></strong>
+      </div>
+
+      <div class="tbl-wrap panel">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th class="chk"><input type="checkbox" id="chkAll" title="전체 선택"></th>
+              <th th:each="c : ${result.view().cols()}" th:classappend="${c.align()}" th:text="${c.title()}"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="r : ${result.rows()}" th:classappend="${r.tag()}" class="rowlink" th:attr="data-href='/deals/' + ${r.id()}">
+              <td class="chk" onclick="event.stopPropagation()"><input type="checkbox" class="sel" th:value="${r.id()}"></td>
+              <td th:each="v,it : ${r.values()}" th:classappend="${result.view().cols()[it.index].align()}" th:text="${v}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(result.rows())}"><td th:attr="colspan=${result.view().cols().size()+1}" class="muted center">조건에 맞는 안건이 없습니다. [＋ 신규] 로 등록하세요.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted small">행 색상 — <span class="lv late">지연</span> 기한 경과 · <span class="lv soon">임박</span> 7일 이내 · <span class="lv ok">완료</span> 해당 단계 완료 · 회색 완료/취소 안건</p>
+    </main>
+  </div>
+</div>
+<script src="/js/app.js"></script>
+<script>
+document.getElementById('btnMail').addEventListener('click', function () {
+  var ids = Array.from(document.querySelectorAll('input.sel:checked')).map(function (c) { return c.value; });
+  if (!ids.length) { alert('메일에 넣을 안건을 목록에서 체크하세요.'); return; }
+  location.href = '/deals/mail?ids=' + ids.join(',');
+});
+document.getElementById('chkAll').addEventListener('change', function () {
+  document.querySelectorAll('input.sel').forEach(function (c) { c.checked = this.checked; }, this);
+});
+</script>
+</body>
+</html>

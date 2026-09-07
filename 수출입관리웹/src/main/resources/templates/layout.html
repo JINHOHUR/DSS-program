@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title} + ' · DSS 수출입 관리'">DSS 수출입 관리</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+
+<body>
+<!-- 좌측 메뉴 -->
+<aside th:fragment="sidebar" class="sidebar">
+  <div class="brand">DSS 수출입 관리</div>
+  <nav>
+    <a href="/"          th:classappend="${active_menu=='dash'}?'on'">대시보드</a>
+    <a href="/deals"     th:classappend="${active_menu=='deals'}?'on'">안건 관리</a>
+    <div class="sep"></div>
+    <a href="/archive"   th:classappend="${active_menu=='archive'}?'on'">자료방</a>
+    <a href="/flow"      th:classappend="${active_menu=='flow'}?'on'">업무 플로우</a>
+    <div class="sep"></div>
+    <a href="/settings"  th:classappend="${active_menu=='settings'}?'on'">설정 · 기준정보</a>
+  </nav>
+  <div class="side-foot">
+    <div th:text="${me.display()}">사용자</div>
+    <div class="muted" th:text="${me.role()}">역할</div>
+    <a class="muted" href="/logout" th:if="${me.isPresent()}">나가기</a>
+  </div>
+</aside>
+
+<!-- 상단 바 -->
+<header th:fragment="topbar(title)" class="topbar">
+  <h1 th:text="${title}">제목</h1>
+  <div class="topbar-right">
+    <span th:text="${companyName}">회사</span>
+    <span class="dot"></span>
+    <span th:text="${today}">날짜</span>
+  </div>
+</header>
+
+<!-- 저장 결과 메시지 -->
+<div th:fragment="flash">
+  <div class="flash ok"  th:if="${msg}" th:text="${msg}"></div>
+  <div class="flash err" th:if="${err}" th:text="${err}"></div>
+</div>
+</body>
+</html>

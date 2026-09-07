@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('자료방')}"></head>
+<body>
+<div class="app">
+  <aside th:replace="~{layout :: sidebar}"></aside>
+  <div class="main">
+    <header th:replace="~{layout :: topbar('자료방')}"></header>
+    <main class="content">
+      <div th:replace="~{layout :: flash}"></div>
+
+      <div th:if="${!rootOk}" class="flash err">
+        자료방 폴더를 찾을 수 없습니다: <span th:text="${root}"></span> — [설정 · 기준정보]에서 경로를 지정하세요.
+      </div>
+
+      <div th:if="${rootOk}">
+        <div class="chips">
+          <a th:each="t : ${tops}" th:href="@{/archive(path=${t})}" class="chip" th:classappend="${#strings.startsWith(path, t)}?'on'" th:text="${t}"></a>
+        </div>
+
+        <form class="toolbar" method="get" action="/archive">
+          <input type="hidden" name="path" th:value="${path}">
+          <a class="btn" th:href="@{/archive(path=${listing.crumbs().size() > 1 ? listing.crumbs()[listing.crumbs().size()-2] : ''})}" th:if="${!#strings.isEmpty(path)}">상위 폴더</a>
+          <label>파일 검색 <input type="text" name="q" th:value="${q}" class="inp w180" placeholder="현재 폴더 이하"></label>
+          <button class="btn">찾기</button>
+          <a class="btn" th:href="@{/archive(path=${path})}" th:if="${!#strings.isEmpty(q)}">지우기</a>
+          <span class="spacer"></span>
+          <button type="button" class="btn" id="btnMkdir">새 폴더</button>
+          <button type="button" class="btn" id="btnRename">이름 변경</button>
+          <button type="button" class="btn danger" id="btnDelete">삭제(휴지통)</button>
+        </form>
+
+        <div class="crumb">
+          <a th:href="@{/archive}">자료방</a>
+          <span th:each="c : ${listing.crumbs()}"> › <a th:href="@{/archive(path=${c})}" th:text="${c.contains('/') ? c.substring(c.lastIndexOf('/') + 1) : c}"></a></span>
+          <span class="muted small" th:if="${listing.ok()}" th:text="'  —  폴더 ' + ${listing.dirs()} + '개 · 파일 ' + ${listing.files()} + '개 · ' + ${listing.totalText()}"></span>
+        </div>
+
+        <!-- 검색 결과 -->
+        <div class="tbl-wrap panel" th:if="${results != null}">
+          <h2 th:text="'검색 결과 ' + ${results.size()} + '개' + (${results.size() >= 500} ? ' (상위 500개만)' : '')"></h2>
+          <table class="tbl">
+            <thead><tr><th>이름</th><th>종류</th><th class="r">크기</th><th>수정한 날짜</th><th>위치</th></tr></thead>
+            <tbody>
+              <tr th:each="e : ${results}">
+                <td><a th:href="@{/archive/download(path=${e.rel()})}" target="_blank" th:text="${e.name()}"></a></td>
+                <td><span th:text="${T(kr.co.dss.fx.service.ArchiveService).kind(e.name())}"></span></td>
+                <td class="r num" th:text="${e.sizeText()}"></td>
+                <td class="mono" th:text="${e.mtime()}"></td>
+                <td class="muted"><a th:href="@{/archive(path=${e.kind()})}" th:text="${e.kind()}"></a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 폴더 내용 -->
+        <div class="tbl-wrap panel" th:if="${results == null}">
+          <div class="flash err" th:if="${!listing.ok()}" th:text="${listing.error()}"></div>
+          <table class="tbl" th:if="${listing.ok()}">
+            <thead><tr><th class="chk"><input type="checkbox" id="chkAll"></th><th>이름</th><th>종류</th><th class="r">크기</th><th>수정한 날짜</th></tr></thead>
+            <tbody>
+              <tr th:each="e : ${listing.entries()}" th:classappend="${e.dir()}?'ok'">
+                <td class="chk"><input type="checkbox" class="sel" th:value="${e.rel()}" th:attr="data-name=${e.name()}"></td>
+                <td>
+                  <a th:if="${e.dir()}" th:href="@{/archive(path=${e.rel()})}" th:text="'📁  ' + ${e.name()}"></a>
+                  <a th:unless="${e.dir()}" th:href="@{/archive/download(path=${e.rel()})}" target="_blank" th:text="${e.name()}"></a>
+                </td>
+                <td th:text="${e.kind()}"></td>
+                <td class="r num" th:text="${e.sizeText()}"></td>
+                <td class="mono" th:text="${e.mtime()}"></td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(listing.entries())}"><td colspan="5" class="muted center">비어 있는 폴더입니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 올리기 -->
+        <div class="panel" th:if="${results == null and listing.ok()}">
+          <h2>＋ 파일 올리기 <span class="muted small">— 현재 폴더로 복사됩니다. 원본은 그대로 남습니다.</span></h2>
+          <form method="post" action="/archive/upload" enctype="multipart/form-data" class="toolbar">
+            <input type="hidden" name="path" th:value="${path}">
+            <input type="file" name="files" multiple required class="inp">
+            <label>같은 이름이 있으면
+              <select name="conflict" class="inp">
+                <option value="rename">이름 바꿔 저장 (파일 (2).xlsx)</option>
+                <option value="overwrite">덮어쓰기</option>
+                <option value="skip">건너뛰기</option>
+              </select></label>
+            <button class="btn primary">올리기</button>
+          </form>
+        </div>
+
+        <!-- 숨은 폼 -->
+        <form id="fMkdir" method="post" action="/archive/mkdir" hidden><input type="hidden" name="path" th:value="${path}"><input type="hidden" name="name"></form>
+        <form id="fRename" method="post" action="/archive/rename" hidden><input type="hidden" name="path" th:value="${path}"><input type="hidden" name="target"><input type="hidden" name="name"></form>
+        <form id="fDelete" method="post" action="/archive/delete" hidden><input type="hidden" name="path" th:value="${path}"><div id="delTargets"></div></form>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="/js/app.js"></script>
+<script>
+(function () {
+  var sel = function () { return Array.from(document.querySelectorAll('input.sel:checked')); };
+  var b;
+  if ((b = document.getElementById('chkAll'))) b.addEventListener('change', function () {
+    document.querySelectorAll('input.sel').forEach(function (c) { c.checked = b.checked; });
+  });
+  if ((b = document.getElementById('btnMkdir'))) b.addEventListener('click', function () {
+    var n = prompt('새 폴더 이름'); if (!n) return;
+    var f = document.getElementById('fMkdir'); f.name.value = n; f.submit();
+  });
+  if ((b = document.getElementById('btnRename'))) b.addEventListener('click', function () {
+    var s = sel(); if (s.length !== 1) { alert('이름을 바꿀 항목을 하나만 체크하세요.'); return; }
+    var n = prompt('새 이름', s[0].dataset.name); if (!n || n === s[0].dataset.name) return;
+    var f = document.getElementById('fRename'); f.target.value = s[0].value; f.name.value = n; f.submit();
+  });
+  if ((b = document.getElementById('btnDelete'))) b.addEventListener('click', function () {
+    var s = sel(); if (!s.length) { alert('삭제할 항목을 체크하세요.'); return; }
+    if (!confirm(s.length + '개 항목을 휴지통(_휴지통)으로 옮길까요?')) return;
+    var box = document.getElementById('delTargets'); box.innerHTML = '';
+    s.forEach(function (c) { var i = document.createElement('input'); i.type = 'hidden'; i.name = 'targets'; i.value = c.value; box.appendChild(i); });
+    document.getElementById('fDelete').submit();
+  });
+})();
+</script>
+</body>
+</html>

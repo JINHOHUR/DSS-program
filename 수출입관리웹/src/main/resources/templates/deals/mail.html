@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Offer Sheet 메일')}"></head>
+<body>
+<div class="app">
+  <aside th:replace="~{layout :: sidebar}"></aside>
+  <div class="main">
+    <header th:replace="~{layout :: topbar('Offer Sheet 송부 메일 문안')}"></header>
+    <main class="content">
+      <p class="sub"><span th:text="${count}"></span>건 기준. 아래 문안을 고쳐서 복사한 뒤 메일에 붙여넣으세요.</p>
+      <div class="panel">
+        <textarea id="mailText" class="inp mono" rows="22" style="width:100%;white-space:pre" th:text="${text}"></textarea>
+        <div class="nav-row">
+          <a class="btn" href="/deals">← 목록</a>
+          <span class="spacer"></span>
+          <button class="btn primary" id="btnCopy">클립보드로 복사</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="/js/app.js"></script>
+<script>
+document.getElementById('btnCopy').addEventListener('click', function () {
+  var t = document.getElementById('mailText');
+  t.select();
+  navigator.clipboard.writeText(t.value).then(function(){ alert('복사했습니다.'); }, function(){ document.execCommand('copy'); alert('복사했습니다.'); });
+});
+</script>
+</body>
+</html>

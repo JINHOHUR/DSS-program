@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: fx-web
+  datasource:
+    # 기본: H2 파일 DB (MariaDB 호환 모드). 포털 DB로 옮길 때는 --spring.profiles.active=mariadb 또는 postgresql
+    url: jdbc:h2:file:./data/fxdb;MODE=MariaDB;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: none          # 스키마는 Flyway 가 관리한다
+    open-in-view: true
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration/{vendor}
+    baseline-on-migrate: true
+  thymeleaf:
+    cache: false
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 2GB
+  mvc:
+    format:
+      date: yyyy-MM-dd
+
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+    session:
+      tracking-modes: cookie      # URL 에 ;jsessionid 가 붙지 않도록
+      timeout: 8h
+
+# ---------------------------------------------------------------------------
+# DSS 설정
+# ---------------------------------------------------------------------------
+dss:
+  sso:
+    # 포털이 사용자를 넘겨주는 HTTP 헤더 이름. 포털 연동 시 실제 이름으로 바꾼다.
+    header-user: X-User-Id
+    header-name: X-User-Name
+    header-role: X-User-Role
+    # true 면 /dev-login 으로 임시 사용자 지정 가능 (포털 연동 전 개발용). 운영에서는 false.
+    dev-mode: true
+  archive:
+    # 자료방(문서 보관 폴더) 루트. 비워두면 [설정] 화면에서 지정한다.
+    # 로컬:  "C:/DSS/자료방"      NAS(UNC): "//서버주소/공유폴더"
+    root: ""
+
+---
+spring:
+  config:
+    activate:
+      on-profile: mariadb
+  datasource:
+    url: jdbc:mariadb://localhost:3306/dss?characterEncoding=utf8
+    driver-class-name: org.mariadb.jdbc.Driver
+    username: dss
+    password: change-me
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgresql
+  datasource:
+    url: jdbc:postgresql://localhost:5432/dss
+    driver-class-name: org.postgresql.Driver
+    username: dss
+    password: change-me

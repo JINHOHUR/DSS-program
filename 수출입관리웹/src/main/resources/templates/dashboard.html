@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('대시보드')}"></head>
+<body>
+<div class="app">
+  <aside th:replace="~{layout :: sidebar}"></aside>
+  <div class="main">
+    <header th:replace="~{layout :: topbar('대시보드')}"></header>
+    <main class="content">
+      <div th:replace="~{layout :: flash}"></div>
+      <p class="sub">오늘 기준으로 챙겨야 할 항목입니다. 줄을 클릭하면 해당 안건이 열립니다.</p>
+
+      <div class="cards">
+        <a class="card c-blue" href="/deals?status=진행중">
+          <div class="card-t">진행중 안건</div>
+          <div class="card-n" th:text="${active}">0</div>
+          <div class="card-s" th:text="'전체 ' + ${total} + '건 중'"></div>
+        </a>
+        <div class="card c-amber">
+          <div class="card-t">7일 내 임박</div>
+          <div class="card-n" th:text="${soon}">0</div>
+          <div class="card-s">7일 이내 처리 필요</div>
+        </div>
+        <div class="card c-red">
+          <div class="card-t">기한 경과</div>
+          <div class="card-n" th:text="${late}">0</div>
+          <div class="card-s" th:text="${late > 0} ? '기한이 지났습니다' : '없음'"></div>
+        </div>
+        <a class="card c-green" href="/deals?view=comm&status=전체">
+          <div class="card-t">커미션 미수령</div>
+          <div class="card-n" th:text="${comm}">0</div>
+          <div class="card-s">청구 후 입금 대기</div>
+        </a>
+      </div>
+
+      <div class="grid2">
+        <section class="panel">
+          <h2>기한 알림</h2>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>구분</th><th>D-Day</th><th>기준일</th><th>항목</th><th>안건</th><th>고객사</th><th>내용</th></tr></thead>
+              <tbody>
+                <tr th:each="a : ${alerts}" th:classappend="${a.tag()}" class="rowlink" th:attr="data-href='/deals/' + ${a.dealId()}">
+                  <td><span class="lv" th:classappend="${a.tag()}" th:text="${a.level()}"></span></td>
+                  <td class="mono" th:text="${a.ddayText()}"></td>
+                  <td class="mono" th:text="${a.dateText()}"></td>
+                  <td th:text="${a.item()}"></td>
+                  <td class="mono" th:text="${a.docNo()}"></td>
+                  <td th:text="${a.customer()}"></td>
+                  <td class="muted" th:text="${a.detail()}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(alerts)}"><td colspan="7" class="muted center">임박하거나 지난 기한이 없습니다.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>고객사별 진행 현황</h2>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>고객사</th><th class="c">진행중</th><th class="c">지연</th><th class="c">임박</th><th class="r">금액 합계</th></tr></thead>
+              <tbody>
+                <tr th:each="c : ${byCustomer}" th:classappend="${c.tag()}">
+                  <td th:text="${c.name()}"></td>
+                  <td class="c num" th:text="${c.cnt()}"></td>
+                  <td class="c num" th:text="${c.late() > 0} ? ${c.late()} : ''"></td>
+                  <td class="c num" th:text="${c.soon() > 0} ? ${c.soon()} : ''"></td>
+                  <td class="r num" th:text="${c.amount()}"></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(byCustomer)}"><td colspan="5" class="muted center">진행중 안건이 없습니다.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="/js/app.js"></script>
+</body>
+</html>

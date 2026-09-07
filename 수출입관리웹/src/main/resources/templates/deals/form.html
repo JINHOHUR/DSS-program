@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head(${deal.docNo})}"></head>
+<body th:attr="data-tab=${tab},data-step=${cur},data-fields=${#strings.listJoin(stages[cur].fields(), ',')}">
+<div class="app">
+  <aside th:replace="~{layout :: sidebar}"></aside>
+  <div class="main">
+    <header th:replace="~{layout :: topbar('안건 관리')}"></header>
+    <main class="content">
+      <div th:replace="~{layout :: flash}"></div>
+
+      <div class="deal-head">
+        <div>
+          <a href="/deals" class="muted small">← 목록</a>
+          <h2><span class="mono" th:text="${deal.docNo}"></span>
+              <span th:text="${deal.customerName()} ?: '고객사 미입력'"></span> ·
+              <span th:text="${deal.model} ?: '품명 미입력'"></span>
+              <span class="lv" th:classappend="${deal.isClosed()}?'done':''" th:text="${deal.status}"></span></h2>
+          <div class="muted">
+            진행 <b th:text="${progress.ratio()}"></b> 단계 · 현재 <b th:text="${progress.nextText()}"></b>
+            <span th:if="${deadline.label() != null}"> · 다음 기한 <span class="lv" th:classappend="${deadline.tag()}" th:text="${deadline.text()} + ' (' + ${deadline.date()} + ')'"></span></span>
+          </div>
+        </div>
+        <div class="deal-actions">
+          <form method="post" th:action="@{'/deals/' + ${deal.id} + '/duplicate'}" style="display:inline"><button class="btn">복제</button></form>
+          <form method="post" th:action="@{'/deals/' + ${deal.id} + '/delete'}" style="display:inline" data-confirm="이 안건을 삭제할까요? (목록에서 사라지며 되돌릴 수 없습니다)"><button class="btn danger">삭제</button></form>
+        </div>
+      </div>
+
+      <!-- 단계 칩 -->
+      <div class="steps">
+        <a th:each="s : ${stages}" th:href="@{'/deals/' + ${deal.id}(step=${s.no()},tab='flow')}"
+           class="step" th:classappend="${s.no()==cur} ? 'cur' : (${done.contains(s.no())} ? 'done' : '')">
+          <span class="step-n" th:text="${done.contains(s.no()) and s.no()!=cur} ? '✔' : ${s.no()}"></span>
+          <span class="step-t" th:text="${T(kr.co.dss.fx.Stages).SHORT.get(s.no())}"></span>
+        </a>
+      </div>
+
+      <div class="tabs">
+        <a class="tab" data-tab="flow" th:classappend="${tab=='flow'}?'on'" href="#">▶ 단계별 진행</a>
+        <a class="tab" data-tab="all"  th:classappend="${tab=='all'}?'on'"  href="#">전체 항목</a>
+        <a class="tab" data-tab="note" th:classappend="${tab=='note'}?'on'" href="#">비고</a>
+      </div>
+
+      <form method="post" th:action="@{'/deals/' + ${deal.id}}" id="dealForm" th:object="${form}" class="panel formpanel">
+        <input type="hidden" name="step" th:value="${cur}">
+        <input type="hidden" name="tab" id="tabField" th:value="${tab}">
+
+        <!-- ===== 단계별 진행 ===== -->
+        <div id="pane-flow" class="pane">
+          <div class="stage-card">
+            <div class="stage-title" th:text="${cur} + '단계.  ' + ${stages[cur].name()}"></div>
+            <div class="stage-desc" th:text="${stages[cur].desc()}"></div>
+            <div class="stage-tip" th:text="'✔  ' + ${stages[cur].tip()}"></div>
+            <div class="stage-store">
+              <span class="muted" th:text="'저장소 : ' + ${stages[cur].store()}"></span>
+              <a class="btn small" th:href="@{'/deals/' + ${deal.id} + '/folder'(stage=${cur})}">📁 자료 폴더 열기</a>
+              <span class="muted small" th:if="${stageFolder != ''}" th:text="${stageFolder}"></span>
+            </div>
+          </div>
+
+          <div class="stage-done">
+            <label class="chk-lbl"><input type="checkbox" name="done" th:checked="${stageMap.get(cur).isDone()}"> <b>이 단계 완료</b></label>
+            <label>완료일 <input type="date" name="doneDate" class="inp" th:value="${stageMap.get(cur).doneDate}"></label>
+            <label class="grow">메모 <input type="text" name="memo" class="inp" th:value="${stageMap.get(cur).memo}"></label>
+          </div>
+
+          <div id="stagefields" class="fields"></div>
+          <p id="nofields" class="muted small" hidden>이 단계는 별도 입력 항목이 없습니다. 완료 시 체크하고 필요하면 메모를 남기세요.</p>
+
+          <div class="nav-row">
+            <a class="btn" th:if="${cur > 0}" th:href="@{'/deals/' + ${deal.id}(step=${cur-1})}">◀ 이전 단계</a>
+            <span class="spacer"></span>
+            <a class="btn" th:if="${cur < 8}" th:href="@{'/deals/' + ${deal.id}(step=${cur+1})}">다음 단계 ▶</a>
+            <button class="btn primary" th:formaction="@{'/deals/' + ${deal.id} + '/stage/' + ${cur}}" name="action" value="save">저장</button>
+            <button class="btn success" th:formaction="@{'/deals/' + ${deal.id} + '/stage/' + ${cur}}" name="action" value="next">이 단계 완료하고 다음 ▶</button>
+          </div>
+        </div>
+
+        <!-- ===== 전체 항목 ===== -->
+        <div id="pane-all" class="pane">
+          <h3 class="sec">기본정보</h3>
+          <div class="fields" id="sec-basic">
+            <div class="row" id="row-status"><label>상태</label><select th:field="*{status}" class="inp"><option th:each="s : ${statuses}" th:value="${s}" th:text="${s}"></option></select></div>
+            <div class="row" id="row-refNo"><label>관련 관리번호</label><input th:field="*{refNo}" class="inp" placeholder="RP-2026-0001 (수리건 등)"><span class="hint">다른 모듈 건과 연결</span></div>
+            <div class="row" id="row-customer"><label>고객사(국내기업)</label>
+              <select th:field="*{customerCode}" class="inp" id="customerCode"><option value="">(선택)</option><option th:each="c : ${customers}" th:value="${c.code}" th:text="${c.name}"></option></select>
+              <span class="hint">없으면 [설정]에서 등록</span></div>
+            <div class="row" id="row-customerPic"><label>고객사 담당자</label><input th:field="*{customerPic}" class="inp"></div>
+            <div class="row" id="row-endUser"><label>최종고객사</label>
+              <select th:field="*{endUserCode}" class="inp"><option value="">(선택)</option><option th:each="c : ${endUsers}" th:value="${c.code}" th:text="${c.name}"></option></select></div>
+            <div class="row" id="row-site"><label>사이트 / 지역</label><input th:field="*{site}" class="inp"></div>
+            <div class="row" id="row-model"><label>모델 / 품명</label><input th:field="*{model}" class="inp wide"></div>
+            <div class="row" id="row-qty"><label>수량</label>
+              <span class="inline"><input th:field="*{qtyNum}" class="inp w80" placeholder="27">
+              <select th:field="*{qtyUnit}" class="inp w80"><option value=""></option><option th:each="u : ${units}" th:value="${u}" th:text="${u}"></option></select></span></div>
+            <div class="row" id="row-kind"><label>구분</label><select th:field="*{kind}" class="inp"><option th:each="k : ${kinds}" th:value="${k}" th:text="${k}"></option></select></div>
+            <div class="row" id="row-needDate"><label>필요시기</label><input type="date" th:field="*{needDate}" class="inp"></div>
+            <div class="row" id="row-owner"><label>담당자</label><input th:field="*{owner}" class="inp" placeholder="로그인ID"></div>
+          </div>
+
+          <h3 class="sec">발주 · 납기</h3>
+          <div class="fields">
+            <div class="row" id="row-poNo"><label>발주서 P.O 번호</label><input th:field="*{poNo}" class="inp wide"></div>
+            <div class="row" id="row-poDate"><label>P.O 접수일</label><input type="date" th:field="*{poDate}" class="inp"></div>
+            <div class="row" id="row-debitNo"><label>Debit Note 번호</label><input th:field="*{debitNo}" class="inp"></div>
+            <div class="row" id="row-offerNo"><label>Offer Sheet 번호</label><input th:field="*{offerNo}" class="inp"><span class="hint">공급사 내부번호</span></div>
+            <div class="row" id="row-fcaDate"><label>FCA (선적예정일)</label>
+              <span class="inline"><input type="date" th:field="*{fcaDate}" class="inp" id="fcaDate">
+              <button type="button" class="btn small" id="btnLc">기한 자동계산</button>
+              <label class="chk-lbl small"><input type="checkbox" th:field="*{recalcLc}"> 저장 시 다시 계산</label></span>
+              <span class="hint" th:text="'이 고객사 규칙: +' + ${lcRule[0]} + '일 / +' + ${lcRule[1]} + '일' + (${lcCustom} ? ' ★전용' : ' (기본)')"></span></div>
+            <div class="row" id="row-amount"><label>금액</label><input th:field="*{amount}" class="inp" placeholder="48000000"><span class="hint">숫자만 (콤마는 자동)</span></div>
+            <div class="row" id="row-currency"><label>통화</label><select th:field="*{currency}" class="inp"><option th:each="c : ${currencies}" th:value="${c}" th:text="${c}"></option></select></div>
+          </div>
+
+          <h3 class="sec">신용장(L/C)</h3>
+          <div class="fields">
+            <div class="row" id="row-lcRequestDate"><label>개설요청 안내일</label><input type="date" th:field="*{lcRequestDate}" class="inp">
+              <span class="hint" th:if="${lcRequestDue != null}" th:text="'개설요청서 수령 기한 ' + ${lcRequestDue} + ' (선적 1주 전)'"></span></div>
+            <div class="row" id="row-lcBank"><label>개설은행</label><input th:field="*{lcBank}" class="inp"></div>
+            <div class="row" id="row-lcNo"><label>L/C 번호</label><input th:field="*{lcNo}" class="inp wide"></div>
+            <div class="row" id="row-lcOpenDate"><label>개설(응답서)일</label><input type="date" th:field="*{lcOpenDate}" class="inp"></div>
+            <div class="row" id="row-latestShipment"><label>Latest shipment</label><input type="date" th:field="*{latestShipment}" class="inp" id="latestShipment"><span class="hint">선적기한</span></div>
+            <div class="row" id="row-expiryDate"><label>Expiry date</label><input type="date" th:field="*{expiryDate}" class="inp" id="expiryDate"><span class="hint">신용장 유효기간</span></div>
+            <div class="row" id="row-lcAmend"><label>Amend 이력</label><input th:field="*{lcAmend}" class="inp wide"></div>
+          </div>
+
+          <h3 class="sec">커미션</h3>
+          <div class="fields">
+            <div class="row" id="row-commRate"><label>커미션 요율(%)</label><input th:field="*{commRate}" class="inp w80"></div>
+            <div class="row" id="row-commAmount"><label>커미션 금액</label><input th:field="*{commAmount}" class="inp"></div>
+            <div class="row" id="row-commInvoiceNo"><label>청구서 번호</label><input th:field="*{commInvoiceNo}" class="inp wide"><span class="hint">INVOICE DSS&lt;날짜&gt;_Payment Summary for ~</span></div>
+            <div class="row" id="row-commBilled"><label>청구일</label><input type="date" th:field="*{commBilled}" class="inp"></div>
+            <div class="row" id="row-commReceived"><label>수령일</label><input type="date" th:field="*{commReceived}" class="inp"><span class="hint">매월 말 25일 전후 입금</span></div>
+          </div>
+
+          <h3 class="sec">자료 폴더</h3>
+          <div class="fields">
+            <div class="row" id="row-archiveDir"><label>자료방 폴더</label><input th:field="*{archiveDir}" class="inp wide" placeholder="01. 프로젝트별 관리/001_프로젝트명">
+              <a class="btn small" th:href="@{'/deals/' + ${deal.id} + '/folder'}">열기</a><span class="hint">자료방 루트 기준 상대경로</span></div>
+          </div>
+          <div class="nav-row"><span class="spacer"></span><button class="btn primary" type="submit">저장</button></div>
+        </div>
+
+        <!-- ===== 비고 ===== -->
+        <div id="pane-note" class="pane">
+          <textarea th:field="*{note}" class="inp" rows="12" style="width:100%"></textarea>
+          <div class="nav-row"><span class="spacer"></span><button class="btn primary" type="submit">저장</button></div>
+        </div>
+      </form>
+    </main>
+  </div>
+</div>
+<script src="/js/app.js"></script>
+</body>
+</html>
